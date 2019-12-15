@@ -61,7 +61,7 @@ def get_country_codes(reload_data=False):
     cc = cc.rename(columns={'name': 'Country', 'iso': 'Code'})
     cc['Code'] = cc['Code'].str.replace(r'.*/.?(\w{3})', '\\1', regex=True)
 
-    return cc[['Country', 'Code']]
+    return cc.set_index('Code')['Country'].to_dict()
 
 
 def get_oecd_members(reload_data=False):
@@ -106,8 +106,11 @@ def get_oecd_members(reload_data=False):
 
     return members
 
-def get_top_countries(year, top=10):
+def get_top_countries(year, top=10, oecd_only=True):
     df = load_life_expectancy_data()
+
+    if oecd_only:
+        oecd_members = get_oecd_members()
 
     top_countries = (df.loc[(df['TIME']==year) & (df['SUBJECT']=='TOT')]
                        .sort_values(by='Value', ascending=False)
@@ -118,11 +121,14 @@ def get_top_countries(year, top=10):
             .pivot(index='LOCATION', columns='SUBJECT', values='Value')
             .sort_values(by='TOT'))
 
+    
+    country_names = get_country_codes()
+
     return df.copy()
 
 def create_dotplot(df, year):
     fig, ax = plt.subplots(figsize=(4,5), dpi=140)
-    fig.subplots_adjust(bottom=0.05, top=0.95, left=0.2, right=0.98)
+    fig.subplots_adjust(bottom=0.05, top=0.93, left=0.2, right=0.98)
 
     ax.errorbar(df['TOT'],
                 df.index,
@@ -155,10 +161,10 @@ def set_axis_appearance(ax):
     ax.margins(y=0.05)
 
 if __name__ == '__main__':
-    # codes = get_country_codes()
+    codes = get_country_codes()
     # members = get_oecd_members()
-    le = get_top_countries(2010)
-    create_dotplot(le, 2010)
+    # le = get_top_countries(2010)
+    # create_dotplot(le, 2010)
     
 
 
