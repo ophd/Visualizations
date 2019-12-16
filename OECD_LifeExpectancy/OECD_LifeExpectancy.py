@@ -13,7 +13,7 @@ def load_life_expectancy_data():
 
 def get_country_codes(reload_data=False):
     '''
-    Returns a Pandas DataFrame from a csv file saved locally.
+    Returns a dictionary from a csv file saved locally.
     If the csv file is not found, or if the data needs to be
     refreshed, the file is (re)built by scraping it from
     countrycode.org.
@@ -23,7 +23,7 @@ def get_country_codes(reload_data=False):
                             from the country code website.
 
     output:
-    a DataFrame containing the country codes.
+    a dictionary mapping three-letter (iso) country codes to country names.
     '''
     f_path_name = os.path.join(
         os.getcwd(), 'OECD_LifeExpectancy', 'country_codes.csv')
@@ -60,6 +60,14 @@ def get_country_codes(reload_data=False):
     cc = pd.read_csv(f_path_name)
     cc = cc.rename(columns={'name': 'Country', 'iso': 'Code'})
     cc['Code'] = cc['Code'].str.replace(r'.*/.?(\w{3})', '\\1', regex=True)
+
+    # There are two OECD countries for which the countries names in 
+    # the country code list does not match the OECD members list.
+    # KOR -> South Korea -> Korea
+    # SVK -> Slovakia -> Slovak Republic
+    # There may be non-oecd countries whose name do not match.
+    match_names = {'Slovakia':'Slovak Republic', 'South Korea':'Korea'}
+    cc['Country'] = cc['Country'].replace(match_names)
 
     return cc.set_index('Code')['Country'].to_dict()
 
@@ -108,9 +116,13 @@ def get_oecd_members(reload_data=False):
 
 def get_top_countries(year, top=10, oecd_only=True):
     df = load_life_expectancy_data()
+    country_names = get_country_codes()
+
+    df['LOCATION'] = df['LOCATION'].replace(country_names)
 
     if oecd_only:
         oecd_members = get_oecd_members()
+        df = df.loc[df['LOCATION'].isin(oecd_members)]
 
     top_countries = (df.loc[(df['TIME']==year) & (df['SUBJECT']=='TOT')]
                        .sort_values(by='Value', ascending=False)
@@ -121,13 +133,12 @@ def get_top_countries(year, top=10, oecd_only=True):
             .pivot(index='LOCATION', columns='SUBJECT', values='Value')
             .sort_values(by='TOT'))
 
-    
-    country_names = get_country_codes()
-
     return df.copy()
 
-def create_dotplot(df, year):
-    fig, ax = plt.subplots(figsize=(4,5), dpi=140)
+def create_dotplot(year, top=10, oecd_only=True):
+    df = get_top_countries(year, top, oecd_only)
+
+    fig, ax = plt.subplots(figsize=(4,4.5), dpi=140)
     fig.subplots_adjust(bottom=0.05, top=0.93, left=0.2, right=0.98)
 
     ax.errorbar(df['TOT'],
@@ -161,10 +172,7 @@ def set_axis_appearance(ax):
     ax.margins(y=0.05)
 
 if __name__ == '__main__':
-    codes = get_country_codes()
-    # members = get_oecd_members()
-    # le = get_top_countries(2010)
-    # create_dotplot(le, 2010)
+    create_dotplot(2010)
     
 
 
