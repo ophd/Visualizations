@@ -2,9 +2,26 @@ import os
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.lines
 import requests
 from bs4 import BeautifulSoup
 
+def mkdir_p(mypath):
+    '''Creates a directory. equivalent to using mkdir -p on the command line
+    
+    code from:
+    https://stackoverflow.com/questions/11373610/save-matplotlib-file-to-a-directory
+    '''
+
+    from errno import EEXIST
+    from os import makedirs,path
+
+    try:
+        makedirs(mypath)
+    except OSError as exc: # Python >2.5
+        if exc.errno == EEXIST and path.isdir(mypath):
+            pass
+        else: raise
 
 def load_life_expectancy_data():
     f_path_name = os.path.join(os.getcwd(), 'OECD_LifeExpectancy', 'OECD_LifeExpectancy_data.csv')
@@ -138,8 +155,8 @@ def get_top_countries(year, top=10, oecd_only=True):
 def create_dotplot(year, top=10, oecd_only=True):
     df = get_top_countries(year, top, oecd_only)
 
-    fig, ax = plt.subplots(figsize=(4,4.5), dpi=140)
-    fig.subplots_adjust(bottom=0.05, top=0.93, left=0.2, right=0.98)
+    fig, ax = plt.subplots(figsize=(4,4.75), dpi=140)
+    fig.subplots_adjust(bottom=0.0, top=0.93, left=0.25, right=0.96)
 
     ax.errorbar(df['TOT'],
                 df.index,
@@ -147,13 +164,17 @@ def create_dotplot(year, top=10, oecd_only=True):
                 ls='', marker='o', ms=6, mfc='#FFFFFF', mec='#4A4A4A', mew=1.5,
                 elinewidth=0.5, capsize=3.5, capthick=1.5, ecolor='#4A4A4A')
     
-    set_axis_appearance(ax)
+    set_dotplot_axis_appearance(ax)
+    anno_locs = df.loc[df['TOT'].idxmax()][['MEN','TOT','WOMEN']].to_list()
+    label_dotplot_points(ax,anno_locs)
 
-    f_path_name = os.path.join(os.getcwd(),'OECD_LifeExpectancy' ,f'LifeExpectancy_{year}.png')
-    fig.savefig(f_path_name, bbox_inchex = 'auto', pad_inches=0)
+    mkdir_p('Output_Figures')
+    f_path = os.path.join(os.getcwd(),'Output_Figures')
+    f_name = f'LifeExpectancy_{year}.png'
+    fig.savefig(os.path.join(f_path, f_name), bbox_inchex = 'auto', pad_inches=0)
 
-def set_axis_appearance(ax):
-    SPINE_COLOUR = '#C4C4C4'
+def set_dotplot_axis_appearance(ax):
+    SPINE_COLOUR = '#8A8A8A'
     LABEL_COLOUR = '#3D3D3D'
 
     ax.xaxis.set_ticks_position('top')
@@ -169,200 +190,28 @@ def set_axis_appearance(ax):
 
     ax.xaxis.label.set_color(LABEL_COLOUR)
     ax.xaxis.set_label_position('top')
-    ax.margins(y=0.05)
+    ax.margins(x=0.2, y=0.15)
+
+def label_dotplot_points(ax, anno_loc):
+    SPINE_COLOUR = '#8A8A8A'
+    anno_text = ['Men', 'Both', 'Women']
+
+    ln = matplotlib.lines.Line2D([anno_loc[0], anno_loc[-1]], [0.96, 0.96],
+                                 color=SPINE_COLOUR, lw=1,
+                                 transform=ax.get_xaxis_transform())
+    ax.add_line(ln)
+
+    for txt, xcoord in zip(anno_text, anno_loc):
+        ax.annotate(txt, (xcoord, 0.96),
+                    xycoords=('data','axes fraction'),
+                    va='center', ha='center', color=SPINE_COLOUR,
+                    fontsize='small',
+                    bbox=dict(boxstyle='square,pad=0.5', fc='#FFFFFF', ec='none'))
+    
 
 if __name__ == '__main__':
     create_dotplot(2010)
-    
 
-
-
-    # TODO: use get_country_codes() when loading life expectancy data to replace values in country columns
-    # TODO: use get_oecd_members() to filter out OECD members when loading data.
-    # TODO: get top 10 countries from OECD in 2010 data and produce dotplot sim. to Dark Horse analytics
-    # TODO: Check if country names match in all data sets. e.g., Slovak Republic vs. Slovakia
-
-    # # Get list of top ten countries for 2010 by total life expectancy at birth
-    # top10 = (df.loc[(df['TIME'] == 2010) & (df['SUBJECT'] == 'TOT')]
-    #           .sort_values(by='Value', ascending=False)
-    #           .iloc[:10]['LOCATION'])
-
-
-
-
-
-
-
-'''
-
-
-
-
-
-
-def dotplot_pole_age(df):
-    print('Creating dot plot for pole age...')
-    import matplotlib.transforms as transforms
-    fig_path = os.path.join(os.getcwd(), 'results', 'figures')
-
-    ages = (df.pivot_table(values='Pole Age', columns=['Dataset', 'Dataset Year'], 
-                  index='Class', aggfunc=[np.mean, np.std])
-                .drop([40,50])
-                .sort_index(ascending=False))
-    ages.index = ages.index.map(lambda x: f'Class {x}')
-    # Create a plot for each dataset
-    names = ages.columns.get_level_values(1).unique()
-    fig, axes = plt.subplots(ncols=len(names), figsize=(7,4.25), dpi=140, sharey=True)
-    # Adjust plot spacing
-    fig.subplots_adjust(bottom=0.07, top=0.8, left=0.1, right=0.96, wspace=0.05)
-
-    for i, name in enumerate(names):
-        # Get all dataset years
-        years = ages['mean'][name].columns.get_level_values(0).unique()
-        # Used to offset the dataset years
-        offset = lambda x,y: transforms.ScaledTranslation(x, y/72., fig.dpi_scale_trans)
-        trans = axes[i].transData
-        # plot both years with error bars
-        # earlier year
-        axes[i].errorbar(ages['mean'][name][years[0]], ages.index,
-                    xerr=ages['std'][name][years[0]],
-                    transform=trans+offset(0,5),
-                    ls='', marker=MARKER_STYLES[0], mfc='#FFFFFF', mec=MARKER_COLOURS[0] ,
-                    ecolor=ERR_COLOURS[0], elinewidth=ERR_LW, capsize=ERR_CAPSIZE,
-                    label=years[0])
-        # latest year
-        axes[i].errorbar(ages['mean'][name][years[1]], ages.index,
-                    xerr=ages['std'][name][years[1]],
-                    transform=trans+offset(0,-5),
-                    ls='', marker=MARKER_STYLES[1], mfc='#FFFFFF', mec=MARKER_COLOURS[1],
-                    ecolor=ERR_COLOURS[1], elinewidth=ERR_LW, capsize=ERR_CAPSIZE,
-                    label=years[1])
-        
-        # Add title
-        axes[i].set_title(name, y=1.15, color=LABEL_COLOUR)
-        # Set x-axis label
-        axes[i].set_xlabel('Pole age (years)')
-        # Fix the min and max values of the x-axis
-        axes[i].set_xticks(range(10,80,10))
-        axes[i].set_xticklabels([f'{x}' if x % 20 == 0 else '' for x in range(10,80,10)])
-        # Fix appearance of labels and axes
-        set_dotplot_appearance(axes[i])
-
-    fig.savefig(os.path.join(fig_path, f'dotplot_Age_Combined.png'),
-            bbox_inchex = 'auto', pad_inches=0)
-    # Close figures to remove them from memory
-    plt.close(fig)
-    print('\tDone.')
-
-def dotplot_pole_age_treatment(df):
-    print('Creating dot plot for pole age...')
-    import matplotlib.transforms as transforms
-    fig_path = os.path.join(os.getcwd(), 'results', 'figures')
-
-    df_treat = (df.pivot_table(values='Pole Age', columns=['Dataset', 'Dataset Year'], 
-                  index='Treatment Type', aggfunc=[np.mean, np.std])
-                .sort_values(('mean','Coronation',2006), ascending=False))
-    # Create a plot for each dataset
-    names = df_treat.columns.get_level_values(1).unique()
-    fig, axes = plt.subplots(ncols=len(names), figsize=(7,4.25), dpi=140, sharey=True)
-    # Adjust plot spacing
-    fig.subplots_adjust(bottom=0.07, top=0.8, left=0.1, right=0.96, wspace=0.05)
-
-    for i, name in enumerate(names):
-        # Get all dataset years
-        years = df_treat['mean'][name].columns.get_level_values(0).unique()
-        # Used to offset the dataset years
-        offset = lambda x,y: transforms.ScaledTranslation(x, y/72., fig.dpi_scale_trans)
-        trans = axes[i].transData
-        # plot both years with error bars
-        # earlier year
-        axes[i].errorbar(df_treat['mean'][name][years[0]], df_treat.index,
-                    xerr=df_treat['std'][name][years[0]],
-                    transform=trans+offset(0,5),
-                    ls='', marker=MARKER_STYLES[0], mfc='#FFFFFF', mec=MARKER_COLOURS[0] ,
-                    ecolor=ERR_COLOURS[0], elinewidth=ERR_LW, capsize=ERR_CAPSIZE,
-                    label=years[0])
-        # latest year
-        axes[i].errorbar(df_treat['mean'][name][years[1]], df_treat.index,
-                    xerr=df_treat['std'][name][years[1]],
-                    transform=trans+offset(0,-5),
-                    ls='', marker=MARKER_STYLES[1], mfc='#FFFFFF', mec=MARKER_COLOURS[1],
-                    ecolor=ERR_COLOURS[1], elinewidth=ERR_LW, capsize=ERR_CAPSIZE,
-                    label=years[1])
-        
-        # Add title
-        axes[i].set_title(name, y=1.15, color=LABEL_COLOUR)
-        # Set x-axis label
-        axes[i].set_xlabel('Pole age (years)')
-        # Fix the min and max values of the x-axis
-        axes[i].set_xticks(range(10,80,10))
-        axes[i].set_xticklabels([f'{x}' if x % 20 == 0 else '' for x in range(10,80,10)])
-        set_dotplot_appearance(axes[i])
-        
-    fig.savefig(os.path.join(fig_path, f'dotplot_Treatments.png'),
-            bbox_inchex = 'auto', pad_inches=0)
-    # Close figures to remove them from memory
-    plt.close(fig)
-    print('\tDone.')
-
-def set_dotplot_appearance(ax):
-
-     # Modify appearance of plot
-    # Set ticks to top the top of the figure
-    ax.xaxis.set_ticks_position('top')
-    # Remove spines on sides
-    for side in ['left','right']:
-        ax.spines[side].set_visible(False)
-    # Change the colour of the x-axis/top & bottom spines
-    for side in ['bottom','top']:
-        ax.spines[side].set_color(SPINE_COLOUR)
-    # Set colour of tick labels
-    ax.tick_params(axis='both', colors=SPINE_COLOUR)
-    # Set colour of axis labels
-    ax.xaxis.label.set_color(LABEL_COLOUR)
-    # Remove ticks everywhere except top
-    # Move x-axis label to top
-    ax.tick_params(left=False, right=False)
-    ax.tick_params(axis='x', direction='in', bottom=True, top=True)
-    ax.xaxis.set_label_position('top')
-    ax.margins(y=0.1)
-    # Add gridlines
-    ax.grid(b=True, which='both',axis='x', color=GRID_COLOUR, ls=':')
-    # Move legend to bottom
-    ax.legend(loc='lower center',markerscale = 1,
-              bbox_to_anchor=(0.5, -0.1), ncol=2, frameon=False)
-    
-def set_axes_appearance(ax, fig, legend_bbox=(0.15, 0.94), ncols=1):
-
-    PLOT_LEGEND_MARKERSCALE = 1.5
-    PLOT_GRID_COLOUR = '#DCDCDC'
-    PLOT_AXES_COLOUR = '#6E6E6E'
-    PLOT_AXES_LABEL_COLOUR = '#404040'
-    # set axis colours
-    for k in ax.spines.keys():
-        ax.spines[k].set_color(PLOT_AXES_COLOUR)
-    # Set colour of tick marks
-    ax.tick_params(axis='both', colors=PLOT_AXES_LABEL_COLOUR)
-    # Set colour of tick labels
-    ax.xaxis.label.set_color(PLOT_AXES_LABEL_COLOUR)
-    ax.yaxis.label.set_color(PLOT_AXES_LABEL_COLOUR)
-    ax.yaxis.set_major_formatter(StrMethodFormatter('{x:,g}'))
-    # add grids
-    ax.grid(b=True, which='major',axis='both', color=PLOT_GRID_COLOUR)
-    # Puts the grids below all other drawn elements
-    # False would put it above all (default)
-    # 'line' would put it above areas but below lines
-    ax.set_axisbelow(True)
-    # add legend
-    # Shrink height of plot to accomodate legend outside of plot area
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width, box.height * 0.95])
-    # add grids
-    # ax.grid(b=True, which='major',axis='y', color=PLOT_GRID_COLOUR)
-    # add legend
-    if ncols > 0:
-        leg = fig.legend(loc='upper center',markerscale = PLOT_LEGEND_MARKERSCALE,
-                bbox_to_anchor=(0.53,1.0), ncol=ncols)
-        leg.get_frame().set_edgecolor(PLOT_AXES_COLOUR)
-
-'''
+# TODO: fine tune the appearance of the results
+# TODO: create an "ouputs" folder in the project folder and add to .gitignore
+#       all visualizations should end up in this folder.
