@@ -8,5 +8,5 @@ Recreating the figure was not too difficult. Launching the `create_dotplot` func
 
 Creating a dotplot in matplotlib is not overly difficult: the `matplotlib.pyplot.axes.plot` function is used with the life expectancy data passed as the x-variable and the country labels as the y-variable. Removing unecessary axes and toning down their presence is done with the `set_dotplot_axis_appearance` function. Finally, point labelling is handled by `label_dotplot_points`, which uses the `axes.annotate` and `axes.add_line` functions. Having a basic understanding of how transforms work in matplotlib was necessary to place these labels.
 
-![Life Expectancy at Birth---Top 10 OECD Countries (2010)](./Output_Figures/LifeExpenctancy_2010.png)
+![Life Expectancy at Birth---Top 10 OECD Countries (2010)](Output_Figures/LifeExpectancy_2010.png)
 
