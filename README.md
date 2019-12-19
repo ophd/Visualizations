@@ -8,13 +8,13 @@ Recreating the figure was not too difficult. Launching the `create_dotplot` func
 
 Creating a dotplot in matplotlib is not overly difficult: the `matplotlib.pyplot.axes.errorbar` function is used with the combined (`TOT`) life expectancy data passed as the x-variable, the country labels as the y-variable, and the difference between `MEN` and `TOT` and `WOMEN` and `TOT` for the negative and positive error values. Removing unecessary axes and toning down their presence is done with the `set_dotplot_axis_appearance` function. Finally, point labelling is handled by `label_dotplot_points`, which uses the `axes.annotate` and `axes.add_line` functions. Having a basic understanding of how transforms work in matplotlib was necessary to place these labels.
 
-![Life Expectancy at Birth---Top 10 OECD Countries (2010)](Output_Figures/LifeExpectancy_2010.png){:height="25%" width="25%"}
+![Life Expectancy at Birth---Top 10 OECD Countries (2010)](Output_Figures/LifeExpectancy_2010.png {:height="25%" width="25%"})
 
 Interestingly, when comparing this figure to the original, the order of the countries has changed. E.g., Spain is up from position six to three, and Canada is no longer on the list. Furthermore, the [Statistics Canada post](https://www150.statcan.gc.ca/n1/pub/82-624-x/2011001/article/11427-eng.htm) does say that Canada has been in the top 10 for 50 years, so I may have to review my code. I know I will need to scrape the year of accession to OECD membership from a top 10 OECD to be accurate.
 
 I though it would be interesting to see the life expectancy over time so I created `plot_country_life_expectancy` that sets things into motion. Using Canada and France as examples, we can see that this plots well, although there is still some fine tuning required on the x-axis.
 
-![Life expectancy over time (Canada)](Output_Figures/LifeExpectancy_Canada(1980_2015).png){:height="25%" width="25%"}
+![Life expectancy over time (Canada)](Output_Figures/LifeExpectancy_Canada_(1980_2015).png {:height="25%" width="25%"})
 
-![Life expectancy over time (France)](Output_Figures/LifeExpectancy_France(1960_2015).png){:height="25%" width="25%"}
+![Life expectancy over time (France)](Output_Figures/LifeExpectancy_France_(1960_2015).png {:height="25%" width="25%"})
 
