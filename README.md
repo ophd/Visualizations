@@ -8,7 +8,7 @@ Recreating the figure was not too difficult. Launching the `create_dotplot` func
 
 Creating a dotplot in matplotlib is not overly difficult: the `matplotlib.pyplot.axes.errorbar` function is used with the combined (`TOT`) life expectancy data passed as the x-variable, the country labels as the y-variable, and the difference between `MEN` and `TOT` and `WOMEN` and `TOT` for the negative and positive error values. Removing unecessary axes and toning down their presence is done with the `set_dotplot_axis_appearance` function. Finally, point labelling is handled by `label_dotplot_points`, which uses the `axes.annotate` and `axes.add_line` functions. Having a basic understanding of how transforms work in matplotlib was necessary to place these labels.
 
-[[Output_Figures/LifeExpectancy_2010.png | width="40px"]]
+[[Output_Figures/LifeExpectancy_2010.png | width=40px]]
 
 Interestingly, when comparing this figure to the original, the order of the countries has changed. E.g., Spain is up from position six to three, and Canada is no longer on the list. Furthermore, the [Statistics Canada post](https://www150.statcan.gc.ca/n1/pub/82-624-x/2011001/article/11427-eng.htm) does say that Canada has been in the top 10 for 50 years, so I may have to review my code. I know I will need to scrape the year of accession to OECD membership from a top 10 OECD to be accurate.
 
